@@ -1,7 +1,5 @@
 package framework;
 
-import application.Bye;
-import application.Hello;
 import framework.api.Path;
 import framework.api.QueryParam;
 import io.undertow.Undertow;
@@ -24,7 +22,8 @@ public class Main {
                     exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
 
                     try {
-                        Stream<Class<?>> classes = Stream.of(Hello.class, Bye.class);
+                        Stream<Class<?>> classes = Stream.empty();
+
                         Stream<Method> methods = classes.flatMap(c -> Stream.of(c.getDeclaredMethods()));
 
                         Stream<Method> methodsWithPath = methods.filter(m -> m.getAnnotation(Path.class) != null);
