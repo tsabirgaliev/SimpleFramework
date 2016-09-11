@@ -6,11 +6,16 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,7 +27,30 @@ public class Main {
                     exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
 
                     try {
-                        Stream<Class<?>> classes = Stream.empty();
+
+                        Consumer println = System.out::println;
+
+                        // For this to work, first do gradle build of application,
+                        // so that application.jar is created
+                        File file = new File("application/build/libs/application.jar");
+
+                        ClassLoader classLoader = new URLClassLoader(new URL[]{file.toURI().toURL()});
+
+                        JarFile jarFile = new JarFile(file);
+
+                        Stream<Class<?>> classes = jarFile.stream()
+                            .map(entry -> entry.getName())
+                            .filter(name -> name.endsWith(".class"))
+                            .map(name -> name.replace('/', '.'))
+                            .map(name -> name.substring(0, name.length() - ".class".length()))
+                            .map(name -> {
+                                try {
+                                    return classLoader.loadClass(name);
+                                } catch (ClassNotFoundException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+
 
                         Stream<Method> methods = classes.flatMap(c -> Stream.of(c.getDeclaredMethods()));
 
@@ -32,6 +60,8 @@ public class Main {
                                 m -> m.getAnnotation(Path.class).value(),
                                 m -> m
                         ));
+
+
 
                         Method method = methodByPath.get(exchange.getRequestPath());
 
