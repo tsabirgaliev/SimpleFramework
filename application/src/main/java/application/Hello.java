@@ -1,8 +1,10 @@
 package application;
 
+import framework.api.Component;
 import framework.api.QueryParam;
 import framework.api.Path;
 
+@Component
 public class Hello {
     @Path("/hi")
     public String sayHello() {
