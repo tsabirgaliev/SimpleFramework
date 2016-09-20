@@ -1,0 +1,66 @@
+== Homework 2
+
+Complete the `framework.Main.main()` method such that the server will
+validate the application jar for certain problems:
+
+1. When no method is found to handle the web request, the application
+should serve a 'Page not found' response. The framework shouldn't throw
+`NullPointerException` when there is no suitable method to handle
+a request.
+
+2. When more than 1 method is found for the same `@Path`, the request
+should end with an exception. The exception message should list all
+conflicting methods for the current request path.
+
+3. Add support for more types to be used as method parameters: Boolean,
+Float, Integer, Enum.
+
+4. The code supports injection of query parameters. Add support for
+injection of header values. Create `@HeaderParam` annotation in `api`
+subproject and use it in application.
+
+
+=== Examples
+
+. Page not found:
++
+----
+$ curl 'http://localhost:8080/foo'
+Page not found
+----
+
+. Multiple methods with same path:
++
+----
+$ curl 'http://localhost:8080/sum'
+java.lang.RuntimeException: These methods have the same @Path value: [public java.lang.String application.Hello.sum(java.lang.String,java.lang.String), public java.lang.String application.Hello.sum(java.lang.Integer,java.lang.Integer)]
+   at framework.Main.lambda$main$9(Main.java:74)
+   ...
+   at org.xnio.nio.WorkerThread.run(WorkerThread.java:464)
+----
+
+. Support for Boolean:
++
+----
+$ curl 'http://localhost:8080/xor?a=true&b=false'
+true
+----
+
+. Support injecting header params. Suppose we have the following method:
++
+[source,java]
+----
+@Path("/headerSum")
+public Integer headerSum(@HeaderParam("a") Integer a, @HeaderParam("b") Integer b) {
+   return a + b;
+}
+----
++
+----
+$ curl -H "a: 5" -H "b: 7" 'http://localhost:8080/headerSum'
+12
+----
+
+NOTE: Remember, that some symbols (like `&`, `*`) will be interpreted by your shell.
+If you have to use them in a shell command, the easiest way is to wrap them single quotes.
+For example: `$ curl 'http://localhost:8080/sum?a=5&b=10'`

@@ -13,6 +13,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
@@ -20,6 +22,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
+
+    public String pageNotFound() {
+        return "Page not found\n";
+    }
+
     public static void main(String[] args) {
         Undertow server = Undertow.builder()
                 .addHttpListener(8080, "localhost")
@@ -56,14 +63,18 @@ public class Main {
 
                         Stream<Method> methodsWithPath = methods.filter(m -> m.getAnnotation(Path.class) != null);
 
-                        Map<String, Method> methodByPath = methodsWithPath.collect(Collectors.toMap(
-                                m -> m.getAnnotation(Path.class).value(),
-                                m -> m
-                        ));
+                        Map<String, List<Method>> methodByPath = methodsWithPath.collect(Collectors.groupingBy(m -> m.getAnnotation(Path.class).value()));
 
 
 
-                        Method method = methodByPath.get(exchange.getRequestPath());
+                        List<Method> pathMethods = methodByPath.getOrDefault(exchange.getRequestPath(), Arrays.asList(Main.class.getDeclaredMethod("pageNotFound")));
+
+                        Method method = null;
+                        if (pathMethods.size() > 1) {
+                            throw new RuntimeException("These methods have the same value in @Path: " + pathMethods.toString());
+                        } else {
+                            method = pathMethods.get(0);
+                        }
 
                         Stream<Parameter> paramsStream = Stream.of(method.getParameters());
 
